@@ -3,10 +3,12 @@ using GymManagement.BLL.ViewModels.MemberViewModels;
 using GymManagement.DAL.Data.Models;
 using GymManagement.DAL.Repositories.Classes;
 using GymManagement.DAL.Repositories.interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GymCore_Project.Controllers
 {
+    [Authorize]
     public class PlansController : Controller
     {
 

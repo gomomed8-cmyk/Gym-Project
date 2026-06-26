@@ -1,18 +1,37 @@
-﻿using GymManagement.BLL.Services.interfaces;
+﻿using GymManagement.BLL.Services.Attachment;
+using GymManagement.BLL.Services.interfaces;
 using GymManagement.BLL.ViewModels.MemberViewModels;
 using GymManagement.DAL.Data.Models;
 using GymManagement.DAL.Repositories.interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NuGet.Protocol.Core.Types;
 using System.Threading.Tasks;
 
 namespace GymCore_Project.Controllers
 {
+    [Authorize(Roles ="SuperAdmin")]
     public class MembersController : Controller
     {
         private readonly IMemberService _memberService;
-        public MembersController(IMemberService memberService)
+        private readonly IAttachmentService _attachmentService;
+
+        public MembersController(IMemberService memberService,IAttachmentService attachmentService)
         {
             _memberService = memberService;
+            _attachmentService = attachmentService;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPhoto(int id)
+        {
+            var member=await _memberService.GetMemberDetailsByIdAsync(id);
+            if(member == null || string.IsNullOrWhiteSpace(member.Photo))
+                return NotFound();
+           var result= _attachmentService.GetFile(member.Photo, "MembersPhoto");
+            if(result == null) return NotFound();
+            return File(result.Value.stream, result.Value.contentType);
+            
         }
 
         public async Task<IActionResult> Index(CancellationToken ct)
@@ -22,7 +41,7 @@ namespace GymCore_Project.Controllers
         }
         [HttpGet]
         public IActionResult Create() => View();
-
+        [HttpPost]
         public async Task<IActionResult> CreateMember(CreateMemberViewModel model, CancellationToken ct)
         {
             if (!ModelState.IsValid)

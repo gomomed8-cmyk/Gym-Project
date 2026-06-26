@@ -1,8 +1,11 @@
 ﻿using AutoMapper;
+using GymManagement.BLL.Common;
+using GymManagement.BLL.Services.Attachment;
 using GymManagement.BLL.Services.interfaces;
 using GymManagement.BLL.ViewModels.MemberViewModels;
 using GymManagement.DAL.Data.Models;
 using GymManagement.DAL.Repositories.interfaces;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,11 +18,13 @@ namespace GymManagement.BLL.Services.Classes
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IAttachmentService _attachmentService;
 
-        public MemberService(IUnitOfWork unitOfWork,IMapper mapper)
+        public MemberService(IUnitOfWork unitOfWork,IMapper mapper,IAttachmentService attachmentService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _attachmentService = attachmentService;
         }
 
         public async Task<bool> CreateMemberAsync(CreateMemberViewModel model, CancellationToken ct)
@@ -28,10 +33,19 @@ namespace GymManagement.BLL.Services.Classes
             var phoneExists = await _unitOfWork.GetRepository<Member>().AnyAsync(m => m.Phone == model.Phone, ct);
             if (emailExists || phoneExists) return false;
 
+          var storedPhotoName= await _attachmentService.UploadAsync(model.PhotoFile.OpenReadStream(),model.PhotoFile.FileName,"MembersPhoto");
+            if (string.IsNullOrWhiteSpace(storedPhotoName)) return false;
+
             var member =_mapper.Map<Member>(model);
+            member.Photo= storedPhotoName;
             _unitOfWork.GetRepository<Member>().Add(member);//add locally
             var reslut = await _unitOfWork.SaveChangesAsync(ct);
-            return reslut > 0;
+           if(reslut>0) return true;
+           else
+            {
+                _attachmentService.Delete(storedPhotoName, "MembersPhoto");
+                return false;
+            }
         }
 
         public async Task<IEnumerable<MemberViewModel>> GetAllMembersAsync(CancellationToken ct)

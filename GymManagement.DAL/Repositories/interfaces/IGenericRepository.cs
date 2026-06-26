@@ -17,5 +17,6 @@ namespace GymManagement.DAL.Repositories.interfaces
         void Delete(TEntity entity);
         Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
         Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, bool tracking = false, CancellationToken ct = default);
+        Task<int> CountAsync(Expression<Func<TEntity,bool>>? condition= null, CancellationToken ct = default);
     }
 }
